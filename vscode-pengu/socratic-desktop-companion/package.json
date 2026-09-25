@@ -1,0 +1,12 @@
+{
+  "name": "socratic-desktop-companion",
+  "version": "0.0.1",
+  "description": "A floating desktop pet that reads your VS Code companion extension's diagnoses and shows Socratic nudges — lives on your whole desktop, not inside VS Code.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}
