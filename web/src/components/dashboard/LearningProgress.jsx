@@ -1,0 +1,206 @@
+import React from 'react';
+import { CheckCircle, Clock, BookMarked, ArrowUpRight, TrendingUp } from 'lucide-react';
+import PixelProgressBar from '../common/PixelProgressBar';
+import PixelBadge from '../common/PixelBadge';
+import { Link } from 'react-router-dom';
+
+export default function LearningProgress({
+  coveredTopics = null,
+  activeTopics = null,
+}) {
+  // Realistic topics prepared for database integration
+  const defaultCovered = [
+    {
+      topic_id: 'dsa.arrays',
+      topic_name: 'Arrays & Two Pointers',
+      subject: 'Data Structures',
+      status: 'completed',
+      progress_percentage: 100,
+      last_updated: '2 days ago',
+      solved_count: 24,
+    },
+    {
+      topic_id: 'dsa.recursion',
+      topic_name: 'Recursion Fundamentals',
+      subject: 'Algorithms',
+      status: 'completed',
+      progress_percentage: 100,
+      last_updated: '5 days ago',
+      solved_count: 18,
+    },
+    {
+      topic_id: 'dsa.linked_lists',
+      topic_name: 'Singly & Doubly Linked Lists',
+      subject: 'Data Structures',
+      status: 'completed',
+      progress_percentage: 100,
+      last_updated: '1 week ago',
+      solved_count: 15,
+    },
+    {
+      topic_id: 'dsa.sorting',
+      topic_name: 'Divide & Conquer Sorting',
+      subject: 'Algorithms',
+      status: 'completed',
+      progress_percentage: 100,
+      last_updated: '2 weeks ago',
+      solved_count: 20,
+    },
+  ];
+
+  const defaultActive = [
+    {
+      topic_id: 'dsa.trees',
+      topic_name: 'Binary Trees & Traversals',
+      subject: 'Data Structures',
+      status: 'active',
+      progress_percentage: 68,
+      last_updated: 'Today',
+      remaining: '4 lessons left',
+      difficulty: 'Intermediate',
+    },
+    {
+      topic_id: 'dsa.dp',
+      topic_name: 'Dynamic Programming (Memoization)',
+      subject: 'Algorithms',
+      status: 'active',
+      progress_percentage: 42,
+      last_updated: 'Yesterday',
+      remaining: '8 lessons left',
+      difficulty: 'Hard',
+    },
+    {
+      topic_id: 'dsa.graphs',
+      topic_name: 'Graph Traversal (BFS & DFS)',
+      subject: 'Algorithms',
+      status: 'partial',
+      progress_percentage: 25,
+      last_updated: '3 days ago',
+      remaining: '11 lessons left',
+      difficulty: 'Intermediate',
+    },
+  ];
+
+  const covered = coveredTopics || defaultCovered;
+  const active = activeTopics || defaultActive;
+
+  return (
+    <div className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-5 sm:p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          <h3 className="font-pixel text-base font-bold text-ink">Learning Progress</h3>
+        </div>
+        <Link
+          to="/syllabus"
+          className="inline-flex items-center gap-1 text-xs font-pixel font-bold text-primary hover:text-primary-hover transition-colors"
+        >
+          <span>View Curriculum</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {/* Two Halves: Left = Covered, Right = Currently Covering */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LEFT: Covered Topics */}
+        <div className="bg-slate-50/70 rounded-xl p-4 border-2 border-slate-900 shadow-pixel-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-200 mb-3">
+              <span className="font-pixel text-xs font-bold uppercase tracking-wider text-learning-hover flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4 text-learning" /> Covered Topics
+              </span>
+              <span className="text-[11px] font-pixel font-bold text-slate-500">
+                {covered.length} Mastered
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {covered.map((item) => (
+                <div
+                  key={item.topic_id}
+                  className="flex items-center justify-between p-2.5 rounded-lg bg-surface border border-slate-300 hover:border-learning transition-colors shadow-2xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-learning-soft text-learning flex items-center justify-center font-bold text-xs">
+                      ✓
+                    </span>
+                    <div>
+                      <p className="font-bold text-xs text-ink">{item.topic_name}</p>
+                      <p className="text-[10px] text-ink-secondary">{item.subject}</p>
+                    </div>
+                  </div>
+                  <PixelBadge variant="green" size="sm">
+                    Done
+                  </PixelBadge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-200 text-center">
+            <span className="text-[11px] text-ink-secondary font-medium">
+              Reinforced through spaced forgetting-curve review.
+            </span>
+          </div>
+        </div>
+
+        {/* RIGHT: Currently Covering */}
+        <div className="bg-slate-50/70 rounded-xl p-4 border-2 border-slate-900 shadow-pixel-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-200 mb-3">
+              <span className="font-pixel text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-primary" /> Currently Covering
+              </span>
+              <span className="text-[11px] font-pixel font-bold text-slate-500">
+                {active.length} In Progress
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {active.map((item) => {
+                const variant =
+                  item.progress_percentage >= 60
+                    ? 'blue'
+                    : item.progress_percentage >= 40
+                    ? 'yellow'
+                    : 'yellow';
+
+                return (
+                  <div
+                    key={item.topic_id}
+                    className="p-3 rounded-lg bg-surface border border-slate-300 hover:border-primary transition-colors shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-bold text-xs text-ink">{item.topic_name}</span>
+                      <PixelBadge variant={variant} size="sm">
+                        {item.difficulty || 'Active'}
+                      </PixelBadge>
+                    </div>
+
+                    <PixelProgressBar
+                      progress={item.progress_percentage}
+                      variant={variant}
+                      showLabel={true}
+                    />
+
+                    <div className="flex items-center justify-between mt-2 text-[10px] text-ink-secondary">
+                      <span>{item.subject}</span>
+                      <span className="font-medium text-slate-500">{item.remaining}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px]">
+            <span className="text-ink-secondary font-medium">Adaptive mastery goal: 85%</span>
+            <Link to="/mcqs" className="font-pixel text-primary hover:underline font-bold">
+              Practice Now →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
