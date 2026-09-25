@@ -112,24 +112,31 @@ export default function ProfilePage() {
             {/* User Name */}
             <div>
               <h1 className="font-pixel text-3xl sm:text-4xl lg:text-5xl font-extrabold text-ink tracking-tight leading-tight">
-                {user?.name || 'Pengu Explorer'}
+                {user?.name || 'Learner'}
               </h1>
-              <p className="text-xs sm:text-sm text-ink-secondary mt-1 flex items-center justify-center md:justify-start gap-1.5 font-medium">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
-                <span>{user?.email || 'learner@argonyx.edu'}</span>
-              </p>
+              {user?.email && (
+                <p className="text-xs sm:text-sm text-ink-secondary mt-1 flex items-center justify-center md:justify-start gap-1.5 font-medium">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{user.email}</span>
+                </p>
+              )}
             </div>
 
             {/* Streak & Join Date Meta Tags */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-1">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border-2 border-slate-900 shadow-pixel-sm text-xs font-pixel font-bold text-ink">
                 <Flame className="w-4 h-4 text-warning fill-warning animate-pulse" />
-                <span>{profileData?.streakDays || 5} Day Streak</span>
+                <span>{profileData?.streakDays ?? 0} Day Streak</span>
               </div>
 
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-xs text-ink-secondary font-medium">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>Joined {profileData?.joinDate || 'September 2026'}</span>
+                <span>
+                  Joined{' '}
+                  {user?.created_at
+                    ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                    : 'Recently'}
+                </span>
               </div>
             </div>
 

@@ -1,0 +1,11 @@
+{
+  "name": "argonyx",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "frontend:dev": "npm --prefix frontend run dev",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "auth:dev": "npm --prefix auth-service run dev"
+  }
+}

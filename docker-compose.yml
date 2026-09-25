@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # ─── Shared PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: statmodels
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./statmodels-postgres/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Auth Service (Express, port 4000) ─────────────────────────────
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/statmodels
+      JWT_ACCESS_SECRET: dev-jwt-secret-change-in-prod
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-prod
+      ACCESS_TOKEN_TTL: 1h
+      REFRESH_TOKEN_TTL_DAYS: 7
+      COOKIE_SECURE: "false"
+      FRONTEND_URL: http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Stat Models API (FastAPI/uvicorn, port 8000) ──────────────────
+  statmodels-api:
+    build: ./statmodels-postgres
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/statmodels
+      JWT_ACCESS_SECRET: dev-jwt-secret-change-in-prod
+      REQUIRE_AUTH: "false"          # set to "true" to enforce JWT on all endpoints
+      USE_LLM_DIAGNOSIS: "false"
+      FRONTEND_ORIGINS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,8 @@
+fastapi==0.141.1
+psycopg2-binary==2.9.13
+pydantic==2.13.5
+pydantic_core==2.46.5
+starlette==1.7.0
+uvicorn==0.53.0
+anthropic>=0.40.0
+PyJWT>=2.8.0

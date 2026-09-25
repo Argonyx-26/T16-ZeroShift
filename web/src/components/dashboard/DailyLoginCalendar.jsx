@@ -1,55 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, Flame, Trophy, CheckCircle2 } from 'lucide-react';
-import PenguMascot from '../common/PenguMascot';
 
 export default function DailyLoginCalendar({
-  currentStreak = 5,
-  totalActiveDays = 22,
-  activityData = null, // Can accept DB array of dates
+  currentStreak = 0,
+  totalActiveDays = 0,
+  attempts = [],
 }) {
   const [hoveredDay, setHoveredDay] = useState(null);
 
-  // Month definition: September 2026 (or dynamic current month)
-  const monthName = "September 2026";
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const todayDate = now.getDate();
+
+  const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  // Generate realistic calendar days for September 2026
-  // Sept 1 2026 was a Tuesday (index 1 in Mon-start week)
-  // Let's create a 4-week grid of recent days leading up to today (day 26)
-  const days = [
-    // Week 1
-    { day: 1, active: true, count: 3, date: 'Sep 1, 2026', dayOfWeek: 'Tue' },
-    { day: 2, active: true, count: 2, date: 'Sep 2, 2026', dayOfWeek: 'Wed' },
-    { day: 3, active: false, count: 0, date: 'Sep 3, 2026', dayOfWeek: 'Thu' },
-    { day: 4, active: true, count: 4, date: 'Sep 4, 2026', dayOfWeek: 'Fri' },
-    { day: 5, active: true, count: 5, date: 'Sep 5, 2026', dayOfWeek: 'Sat' },
-    { day: 6, active: false, count: 0, date: 'Sep 6, 2026', dayOfWeek: 'Sun' },
-    { day: 7, active: true, count: 1, date: 'Sep 7, 2026', dayOfWeek: 'Mon' },
-    // Week 2
-    { day: 8, active: true, count: 2, date: 'Sep 8, 2026', dayOfWeek: 'Tue' },
-    { day: 9, active: true, count: 3, date: 'Sep 9, 2026', dayOfWeek: 'Wed' },
-    { day: 10, active: true, count: 4, date: 'Sep 10, 2026', dayOfWeek: 'Thu' },
-    { day: 11, active: true, count: 2, date: 'Sep 11, 2026', dayOfWeek: 'Fri' },
-    { day: 12, active: false, count: 0, date: 'Sep 12, 2026', dayOfWeek: 'Sat' },
-    { day: 13, active: false, count: 0, date: 'Sep 13, 2026', dayOfWeek: 'Sun' },
-    { day: 14, active: true, count: 3, date: 'Sep 14, 2026', dayOfWeek: 'Mon' },
-    // Week 3
-    { day: 15, active: true, count: 4, date: 'Sep 15, 2026', dayOfWeek: 'Tue' },
-    { day: 16, active: true, count: 1, date: 'Sep 16, 2026', dayOfWeek: 'Wed' },
-    { day: 17, active: true, count: 5, date: 'Sep 17, 2026', dayOfWeek: 'Thu' },
-    { day: 18, active: true, count: 2, date: 'Sep 18, 2026', dayOfWeek: 'Fri' },
-    { day: 19, active: false, count: 0, date: 'Sep 19, 2026', dayOfWeek: 'Sat' },
-    { day: 20, active: true, count: 3, date: 'Sep 20, 2026', dayOfWeek: 'Sun' },
-    { day: 21, active: true, count: 4, date: 'Sep 21, 2026', dayOfWeek: 'Mon' },
-    // Week 4 (Current active streak)
-    { day: 22, active: true, count: 3, date: 'Sep 22, 2026', dayOfWeek: 'Tue' },
-    { day: 23, active: true, count: 4, date: 'Sep 23, 2026', dayOfWeek: 'Wed' },
-    { day: 24, active: true, count: 2, date: 'Sep 24, 2026', dayOfWeek: 'Thu' },
-    { day: 25, active: true, count: 5, date: 'Sep 25, 2026', dayOfWeek: 'Fri' },
-    { day: 26, active: true, count: 3, date: 'Sep 26, 2026', dayOfWeek: 'Sat', isToday: true },
-    { day: 27, active: false, count: 0, date: 'Sep 27, 2026', dayOfWeek: 'Sun', isFuture: true },
-    { day: 28, active: false, count: 0, date: 'Sep 28, 2026', dayOfWeek: 'Mon', isFuture: true },
-  ];
+  // Build a lookup map of attempts per day in current month: { 'YYYY-MM-DD': count }
+  const attemptsByDate = useMemo(() => {
+    const map = {};
+    if (Array.isArray(attempts)) {
+      attempts.forEach((att) => {
+        if (att.created_at) {
+          const dateStr = att.created_at.split('T')[0];
+          map[dateStr] = (map[dateStr] || 0) + 1;
+        }
+      });
+    }
+    return map;
+  }, [attempts]);
+
+  // Compute 28 or full calendar days dynamically
+  const days = useMemo(() => {
+    const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const result = [];
+
+    // Calculate start offset (0 = Sunday, 1 = Monday)
+    const firstDayIndex = (new Date(currentYear, currentMonth, 1).getDay() + 6) % 7;
+
+    // Pad beginning of week if month doesn't start on Monday
+    for (let p = 0; p < firstDayIndex; p++) {
+      result.push({ isPad: true });
+    }
+
+    for (let d = 1; d <= totalDaysInMonth; d++) {
+      const dateObj = new Date(currentYear, currentMonth, d);
+      const isoDate = dateObj.toISOString().split('T')[0];
+      const count = attemptsByDate[isoDate] || 0;
+      const isToday = d === todayDate;
+      const isFuture = d > todayDate;
+      const active = count > 0 || isToday; // Active if logged in/attempted today
+
+      result.push({
+        day: d,
+        active,
+        count,
+        date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        dayOfWeek: dateObj.toLocaleDateString('en-US', { weekday: 'short' }),
+        isToday,
+        isFuture,
+      });
+    }
+
+    return result;
+  }, [currentYear, currentMonth, todayDate, attemptsByDate]);
 
   return (
     <div className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-5 sm:p-6">
@@ -58,7 +72,7 @@ export default function DailyLoginCalendar({
         <div>
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
-            <h3 className="font-pixel text-base font-bold text-ink">Daily Login & Streak</h3>
+            <h3 className="font-pixel text-base font-bold text-ink">Daily Activity & Streak</h3>
           </div>
           <p className="text-xs text-ink-secondary mt-0.5">
             Consistency is the secret to algorithmic mastery.
@@ -87,7 +101,7 @@ export default function DailyLoginCalendar({
       <div className="flex items-center justify-between mb-3 px-1 text-xs">
         <span className="font-pixel font-bold text-ink uppercase tracking-wider">{monthName}</span>
         <span className="text-[11px] text-ink-secondary font-medium">
-          Logged in today: <span className="font-pixel font-bold text-learning">Active ✓</span>
+          Status: <span className="font-pixel font-bold text-learning">Active Session ✓</span>
         </span>
       </div>
 
@@ -103,8 +117,12 @@ export default function DailyLoginCalendar({
       {/* Calendar Grid */}
       <div className="relative grid grid-cols-7 gap-2">
         {days.map((item, idx) => {
+          if (item.isPad) {
+            return <div key={`pad-${idx}`} className="h-11 sm:h-12" />;
+          }
+
           let bgClass = "bg-slate-100 text-slate-400 border-slate-300";
-          if (item.active) {
+          if (item.active && !item.isFuture) {
             bgClass = "bg-learning-soft text-learning-hover border-learning hover:bg-emerald-100 shadow-[2px_2px_0px_#16A34A]";
           }
           if (item.isToday) {
@@ -116,7 +134,7 @@ export default function DailyLoginCalendar({
 
           return (
             <div
-              key={idx}
+              key={`day-${item.day}`}
               onMouseEnter={() => setHoveredDay(item)}
               onMouseLeave={() => setHoveredDay(null)}
               className={`relative h-11 sm:h-12 rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none ${bgClass}`}
@@ -124,7 +142,7 @@ export default function DailyLoginCalendar({
               <span className="text-xs font-pixel font-bold">
                 {item.day}
               </span>
-              {item.active && !item.isToday && (
+              {item.active && !item.isToday && !item.isFuture && (
                 <span className="w-1.5 h-1.5 rounded-full bg-learning mt-0.5" />
               )}
               {item.isToday && (
@@ -144,7 +162,7 @@ export default function DailyLoginCalendar({
             <>
               <CheckCircle2 className={`w-4 h-4 ${hoveredDay.active ? 'text-learning' : 'text-slate-400'}`} />
               <span className="font-medium text-ink">
-                <strong>{hoveredDay.date}</strong> — {hoveredDay.active ? `${hoveredDay.count} lessons / tests solved` : 'No activity recorded'}
+                <strong>{hoveredDay.date}</strong> — {hoveredDay.count > 0 ? `${hoveredDay.count} questions solved` : (hoveredDay.isToday ? 'Logged in today' : 'No activity recorded')}
               </span>
             </>
           ) : (

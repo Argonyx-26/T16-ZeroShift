@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { learningService, MOCK_QUESTIONS } from '../services/learningService';
+import { useAuth } from '../context/AuthContext';
+import { learningService } from '../services/learningService';
 import MCQQuestionView from '../components/mcq/MCQQuestionView';
 import QuestionNavigator from '../components/mcq/QuestionNavigator';
 import TestResultSummary from '../components/mcq/TestResultSummary';
 import Modal from '../components/common/Modal';
 import PixelProgressBar from '../components/common/PixelProgressBar';
 import PixelBadge from '../components/common/PixelBadge';
-import { Clock, ArrowLeft, Send, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Clock, ArrowLeft, Send, AlertTriangle, ShieldCheck, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function MCQTestPage() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [testData, setTestData] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -24,29 +26,44 @@ export default function MCQTestPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize test data and questions
+  // Initialize test data and questions from backend
   useEffect(() => {
-    const test = learningService.getTestById(testId);
-    setTestData(test);
-    if (test?.duration_seconds) {
-      setSecondsRemaining(test.duration_seconds);
-    }
-
-    async function loadTestQuestions() {
+    async function loadTestAndQuestions() {
       try {
-        const domain = test?.domain || 'dsa';
-        const qList = await learningService.getQuestions(domain, null, test?.total_questions || 5);
+        const cleanTopicId = testId?.replace(/^test_/, '');
+        const topics = await learningService.getTopics();
+        const matchedTopic = topics.find(
+          (t) => t.topic_id === cleanTopicId || t.topic_id.includes(cleanTopicId)
+        );
+
+        const domain = matchedTopic?.domain || null;
+        let qList = await learningService.getQuestions(domain, null, 10);
+        
+        // If domain filter returned 0, get all questions from bank
+        if (!qList || qList.length === 0) {
+          qList = await learningService.getQuestions(null, null, 10);
+        }
+
+        setTestData({
+          test_id: testId,
+          title: matchedTopic?.display_name || 'Adaptive Assessment Quiz',
+          topic_id: matchedTopic?.topic_id || cleanTopicId || 'dsa.general',
+          topic_name: matchedTopic?.display_name || 'Core Fundamentals',
+          domain: matchedTopic?.domain || 'dsa',
+          duration_seconds: Math.max(300, (qList?.length || 5) * 120),
+        });
+
         if (qList && qList.length > 0) {
           setQuestions(qList);
-        } else {
-          setQuestions(MOCK_QUESTIONS);
+          setSecondsRemaining(Math.max(300, qList.length * 120));
         }
-      } catch {
-        setQuestions(MOCK_QUESTIONS);
+      } catch (err) {
+        console.warn('Failed to load test questions from backend:', err);
       }
     }
-    loadTestQuestions();
+    loadTestAndQuestions();
   }, [testId]);
 
   // Countdown Timer
@@ -100,17 +117,39 @@ export default function MCQTestPage() {
     }
   };
 
-  const handleSubmitTest = (autoSubmit = false) => {
+  const handleSubmitTest = async (autoSubmit = false) => {
     setIsSubmitModalOpen(false);
+    setIsSubmitting(true);
 
     // Calculate score
     let correctCount = 0;
-    questions.forEach((q, idx) => {
+    const studentId = user?.id || 's_1029';
+
+    // Submit diagnoses to backend for all answered questions in parallel
+    const diagnosePromises = questions.map((q, idx) => {
       const chosen = answers[idx];
-      if (chosen && chosen === q.correct_option_id) {
-        correctCount += 1;
+      if (chosen) {
+        if (chosen === q.correct_option_id) {
+          correctCount += 1;
+        }
+        return learningService.diagnoseMCQ(
+          studentId,
+          q.question_id,
+          q.topic_id || testData?.topic_id || 'dsa.general',
+          chosen,
+          q.correct_option_id
+        ).catch(() => null);
       }
+      return Promise.resolve(null);
     });
+
+    try {
+      await Promise.all(diagnosePromises);
+    } catch (err) {
+      console.warn('Diagnosis submission notice:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
 
     const totalSeconds = testData?.duration_seconds || 1200;
     const timeSpentSeconds = Math.max(1, totalSeconds - secondsRemaining);

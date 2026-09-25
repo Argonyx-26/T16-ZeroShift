@@ -1,10 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Compass, Sparkles, BookOpen, AlertCircle, ArrowRight, Play, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PenguMascot from '../common/PenguMascot';
 import PixelBadge from '../common/PixelBadge';
+import { learningService } from '../../services/learningService';
 
-export default function ContinueLearningSpace() {
+export default function ContinueLearningSpace({
+  recommendedTopic = null,
+  featuredMaterial = null,
+}) {
+  const [topic, setTopic] = useState(recommendedTopic);
+  const [material, setMaterial] = useState(featuredMaterial);
+
+  useEffect(() => {
+    async function loadSpaceData() {
+      try {
+        if (!topic) {
+          const topics = await learningService.getTopics();
+          if (topics && topics.length > 0) {
+            setTopic(topics[0]);
+          }
+        }
+        if (!material) {
+          const mats = await learningService.getStudyMaterials(null, 'video');
+          if (mats && mats.length > 0) {
+            setMaterial(mats[0]);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load learning space resources:', err);
+      }
+    }
+    loadSpaceData();
+  }, []);
+
+  const focusTitle = topic?.display_name || 'Core Fundamentals';
+  const focusDomain = (topic?.domain || 'DSA').toUpperCase();
+  const videoTitle = material?.title || 'Data Structures & Algorithms Overview';
+  const videoDomain = (material?.domain || 'DSA').toUpperCase();
+
   return (
     <div className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-6">
       {/* Section Header */}
@@ -28,7 +62,7 @@ export default function ContinueLearningSpace() {
 
       {/* Recommended Focus Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Weak topic focus */}
+        {/* Card 1: Live Weak / Current Topic focus */}
         <div className="p-4 rounded-xl bg-blue-50/50 border-2 border-slate-900 shadow-pixel-sm hover:translate-y-[-2px] transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -37,21 +71,21 @@ export default function ContinueLearningSpace() {
               </span>
               <span className="w-2 h-2 rounded-full bg-primary" />
             </div>
-            <h4 className="font-bold text-sm text-ink mb-1">Binary Tree Level-Order</h4>
+            <h4 className="font-bold text-sm text-ink mb-1">{focusTitle}</h4>
             <p className="text-xs text-ink-secondary mb-3">
-              Your last MCQ showed a small slip on queue discovery order. Reinforce with a 5-min practice!
+              Curriculum topic in {focusDomain}. Practice MCQs to boost Bayesian mastery score.
             </p>
           </div>
           <Link
-            to="/mcqs"
+            to={topic ? `/mcqs/test/test_${topic.topic_id}` : '/mcqs'}
             className="inline-flex items-center gap-1.5 text-xs font-pixel font-bold text-primary hover:text-primary-hover group"
           >
-            <span>Review Question</span>
+            <span>Practice Topic</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        {/* Card 2: Recommended Video */}
+        {/* Card 2: Live Recommended Video from DB */}
         <div className="p-4 rounded-xl bg-emerald-50/50 border-2 border-slate-900 shadow-pixel-sm hover:translate-y-[-2px] transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -60,9 +94,9 @@ export default function ContinueLearningSpace() {
               </span>
               <Play className="w-3.5 h-3.5 text-learning fill-learning" />
             </div>
-            <h4 className="font-bold text-sm text-ink mb-1">Dynamic Programming Memoization</h4>
+            <h4 className="font-bold text-sm text-ink mb-1 line-clamp-1">{videoTitle}</h4>
             <p className="text-xs text-ink-secondary mb-3">
-              Curated by TakeUForward & NeetCode for intuitive recursion-to-table transition.
+              Curated lecture for {videoDomain} students with verified in-site embedding.
             </p>
           </div>
           <Link
@@ -74,20 +108,20 @@ export default function ContinueLearningSpace() {
           </Link>
         </div>
 
-        {/* Card 3: Upcoming Checkpoint */}
+        {/* Card 3: Adaptive Revision Checkpoint */}
         <div className="p-4 rounded-xl bg-amber-50/50 border-2 border-slate-900 shadow-pixel-sm hover:translate-y-[-2px] transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="font-pixel text-[11px] font-bold text-warning uppercase tracking-wider">
-                Upcoming Checkpoint
+                Adaptive Checkpoint
               </span>
               <span className="text-[10px] font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300">
-                20 mins
+                10 mins
               </span>
             </div>
-            <h4 className="font-bold text-sm text-ink mb-1">Weekly DSA Mastery Quiz</h4>
+            <h4 className="font-bold text-sm text-ink mb-1">Knowledge Retention Quiz</h4>
             <p className="text-xs text-ink-secondary mb-3">
-              Scheduled revision test anchored to your forgetting-curve memory decay score.
+              Adaptive diagnostic test calibrated by forgetting-curve memory decay.
             </p>
           </div>
           <Link
@@ -106,10 +140,10 @@ export default function ContinueLearningSpace() {
           <PenguMascot pose="teacher" size="sm" alt="Pengu Guide" animate={false} />
           <div>
             <h5 className="font-pixel text-xs font-bold text-ink uppercase tracking-wider">
-              More Widgets Arriving Here
+              Study Companion Online
             </h5>
             <p className="text-xs text-ink-secondary mt-0.5">
-              Real-time code submissions, peer group discussion threads, and root-cause prerequisite maps will automatically populate this space.
+              Bayesian knowledge tracing is actively monitoring your learning curve across all 12 curriculum topics.
             </p>
           </div>
         </div>

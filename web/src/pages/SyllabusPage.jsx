@@ -28,8 +28,9 @@ export default function SyllabusPage() {
       const data = await learningService.getStudyMaterials();
       setMaterials(data || []);
     } catch (err) {
-      setError('Could not load learning resources. Showing offline catalog.');
-      setMaterials(learningService.getStudyMaterials());
+      console.warn('Could not load learning resources:', err);
+      setError('Could not load learning resources.');
+      setMaterials([]);
     } finally {
       setLoading(false);
     }

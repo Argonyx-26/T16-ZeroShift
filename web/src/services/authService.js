@@ -18,15 +18,6 @@ export const authService = {
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return { success: true, user, token };
     } catch (err) {
-      // If auth-service is temporarily offline, provide realistic dev-mode registration
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        console.warn('Auth backend offline, using dev mock session for demonstration');
-        const fallbackUser = { id: `s_${Date.now().toString().slice(-6)}`, name, email };
-        const fallbackToken = `dev_token_${Date.now()}`;
-        localStorage.setItem(TOKEN_KEY, fallbackToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(fallbackUser));
-        return { success: true, user: fallbackUser, token: fallbackToken, isMock: true };
-      }
       return { success: false, error: err.message || 'Registration failed' };
     }
   },
@@ -45,18 +36,6 @@ export const authService = {
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return { success: true, user, token };
     } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        console.warn('Auth backend offline, using dev mock session for demonstration');
-        const fallbackUser = {
-          id: 's_1029',
-          name: email.split('@')[0] || 'Learner',
-          email,
-        };
-        const fallbackToken = `dev_token_${Date.now()}`;
-        localStorage.setItem(TOKEN_KEY, fallbackToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(fallbackUser));
-        return { success: true, user: fallbackUser, token: fallbackToken, isMock: true };
-      }
       return { success: false, error: err.message || 'Invalid credentials' };
     }
   },

@@ -20,7 +20,10 @@ export default function QuestionPage() {
     async function loadFirstQuestion() {
       setLoading(true);
       try {
-        const questions = await learningService.getQuestions('dsa', 'easy', 1);
+        let questions = await learningService.getQuestions('dsa', 'easy', 1);
+        if (!questions || questions.length === 0) {
+          questions = await learningService.getQuestions(null, null, 1);
+        }
         if (questions && questions.length > 0) {
           setQuestion(questions[0]);
         }
