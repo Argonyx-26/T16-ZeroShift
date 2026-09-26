@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, HelpCircle, CheckCircle, ArrowRight, Play, Award } from 'lucide-react';
+import { Calendar, Clock, HelpCircle, CheckCircle, ArrowRight, Play, Award, RotateCcw } from 'lucide-react';
 import PixelBadge from '../common/PixelBadge';
 import PixelProgressBar from '../common/PixelProgressBar';
 
@@ -10,7 +10,7 @@ export default function MCQTestCard({ test }) {
   const isCompleted = test.status === 'completed';
 
   const handleStartOrReview = () => {
-    // Navigate in the SAME browser tab
+    // Navigate in the SAME browser tab — always start fresh (no resume)
     navigate(`/mcqs/test/${test.test_id}`);
   };
 
@@ -35,11 +35,11 @@ export default function MCQTestCard({ test }) {
             </PixelBadge>
 
             <PixelBadge
-              variant={isCompleted ? 'green' : 'yellow'}
+              variant={isCompleted ? 'green' : 'blue'}
               size="sm"
-              icon={isCompleted ? CheckCircle : Clock}
+              icon={isCompleted ? CheckCircle : Play}
             >
-              {isCompleted ? 'Completed' : 'Ongoing'}
+              {isCompleted ? 'Completed' : 'Available'}
             </PixelBadge>
           </div>
         </div>
@@ -63,7 +63,9 @@ export default function MCQTestCard({ test }) {
             <HelpCircle className="w-4 h-4 text-slate-400 flex-shrink-0" />
             <div>
               <p className="font-bold text-ink">{test.total_questions} Questions</p>
-              <p className="text-[10px] text-slate-400">{test.attempted_questions} Attempted</p>
+              <p className="text-[10px] text-slate-400">
+                {isCompleted ? `${test.attempted_questions || test.total_questions} Completed` : 'Not Started'}
+              </p>
             </div>
           </div>
 
@@ -89,8 +91,8 @@ export default function MCQTestCard({ test }) {
             </div>
           ) : (
             <PixelProgressBar
-              progress={test.progress_percentage}
-              variant="yellow"
+              progress={test.progress_percentage || 0}
+              variant="blue"
               showLabel={true}
             />
           )}
@@ -100,7 +102,7 @@ export default function MCQTestCard({ test }) {
       {/* Action CTA */}
       <div className="pt-2 flex items-center justify-between">
         <span className="text-[11px] text-ink-secondary font-medium">
-          {isCompleted ? 'Review questions & mistakes' : 'Pick up right where you left off'}
+          {isCompleted ? 'Completed quiz. Retake anytime.' : 'Takes a fresh attempt each time'}
         </span>
 
         <button
@@ -111,13 +113,13 @@ export default function MCQTestCard({ test }) {
         >
           {isCompleted ? (
             <>
-              <span>Review Test</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Retake Test</span>
             </>
           ) : (
             <>
               <Play className="w-3.5 h-3.5 fill-white" />
-              <span>Resume Test</span>
+              <span>Start Test</span>
             </>
           )}
         </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PenguMascot from '../components/common/PenguMascot';
 import PixelBadge from '../components/common/PixelBadge';
 import {
@@ -6,34 +6,26 @@ import {
   Terminal,
   Check,
   Copy,
-  ChevronDown,
   ChevronRight,
-  ShieldCheck,
-  AlertCircle,
-  HelpCircle,
+  Download,
+  Upload,
+  FileArchive,
   Sparkles,
-  ExternalLink,
   Laptop,
   Puzzle,
-  Eye,
-  Activity,
-  ArrowRight,
-  MessageSquare,
-  Lock,
-  Zap,
+  Code2,
+  Database,
+  Layers,
+  Globe,
+  CheckCircle2,
 } from 'lucide-react';
 
 // Documentation Section Navigation Items
 const DOC_SECTIONS = [
-  { id: 'overview', title: 'Overview' },
-  { id: 'what-it-does', title: 'What it does' },
-  { id: 'how-it-works', title: 'How it works' },
-  { id: 'what-it-needs', title: 'What it needs' },
-  { id: 'installation', title: 'Installation' },
-  { id: 'starter-kit', title: 'Using a Starter Kit' },
-  { id: 'health-check', title: 'Checking it’s Running' },
-  { id: 'privacy', title: 'Privacy & Security' },
-  { id: 'troubleshooting', title: 'Troubleshooting' },
+  { id: 'getting-started', title: 'Getting Started' },
+  { id: 'setup', title: 'Setup (1-3)' },
+  { id: 'starter-kits', title: 'Starter Kits' },
+  { id: 'zip-downloads', title: 'Downloads & Uploads' },
 ];
 
 // Reusable Code Block with copy functionality
@@ -48,12 +40,11 @@ function CodeBlock({ code, language = 'BASH' }) {
 
   return (
     <div className="relative rounded-2xl overflow-hidden border-2 border-slate-900 shadow-pixel bg-slate-950 text-slate-100 font-mono text-xs my-4">
-      {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400">
         <span className="font-pixel font-bold uppercase tracking-wider text-slate-300">{language}</span>
         <button
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors font-sans text-xs"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors font-sans text-xs cursor-pointer"
           title="Copy to clipboard"
         >
           {copied ? (
@@ -69,7 +60,6 @@ function CodeBlock({ code, language = 'BASH' }) {
           )}
         </button>
       </div>
-      {/* Code contents */}
       <pre className="p-4 overflow-x-auto leading-relaxed select-text">
         <code>{code}</code>
       </pre>
@@ -77,42 +67,60 @@ function CodeBlock({ code, language = 'BASH' }) {
   );
 }
 
-// Reusable Callout components
-function Callout({ type = 'info', title, children }) {
-  const styles = {
-    info: 'bg-primary-soft border-primary text-ink',
-    tip: 'bg-emerald-50 border-learning text-ink',
-    warning: 'bg-amber-50 border-warning text-ink',
-    success: 'bg-green-50 border-learning text-ink',
-  };
-
-  const icons = {
-    info: <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />,
-    tip: <Zap className="w-4 h-4 text-learning flex-shrink-0" />,
-    warning: <AlertCircle className="w-4 h-4 text-warning flex-shrink-0" />,
-    success: <Check className="w-4 h-4 text-learning flex-shrink-0" />,
-  };
-
-  return (
-    <div className={`p-4 rounded-xl border-2 shadow-pixel-sm my-4 ${styles[type] || styles.info}`}>
-      <div className="flex items-center gap-2 font-pixel text-xs font-bold uppercase tracking-wider mb-1">
-        {icons[type]}
-        <span>{title || type}</span>
-      </div>
-      <div className="text-xs sm:text-sm text-ink-secondary leading-relaxed font-sans">
-        {children}
-      </div>
-    </div>
-  );
-}
+// 5 Backend ZIP Packages Definition
+const INITIAL_PACKAGES = [
+  {
+    id: 'pkg-desktop',
+    filename: 'desktop-companion.zip',
+    title: 'Desktop Companion App',
+    description: 'Electron-based floating companion that monitors local port 4123 and reacts as you code.',
+    size: '14.2 MB',
+    type: 'Application',
+    badgeVariant: 'blue',
+  },
+  {
+    id: 'pkg-dsa',
+    filename: 'dsa-binary-search-recursion.zip',
+    title: 'DSA — Binary Search & Recursion',
+    description: 'Starter kit testing loop bounds, empty input edge cases, and recursive base cases.',
+    size: '2.8 MB',
+    type: 'Starter Kit',
+    badgeVariant: 'green',
+  },
+  {
+    id: 'pkg-dbms',
+    filename: 'dbms-query-engine.zip',
+    title: 'DBMS — Query Engine',
+    description: 'Starter kit exploring how WHERE/JOIN execute, ID comparison pitfalls, and empty tables.',
+    size: '3.4 MB',
+    type: 'Starter Kit',
+    badgeVariant: 'yellow',
+  },
+  {
+    id: 'pkg-sysdesign',
+    filename: 'system-design-lru-cache.zip',
+    title: 'System Design — LRU Cache',
+    description: 'Starter kit for cache eviction logic, capacity limits, and infinite eviction prevention.',
+    size: '3.1 MB',
+    type: 'Starter Kit',
+    badgeVariant: 'red',
+  },
+  {
+    id: 'pkg-webdev',
+    filename: 'web-dev-fetch-debounce.zip',
+    title: 'Web Dev — Fetch & Debounce',
+    description: 'Starter kit for retry logic without infinite loops, async errors, and event debouncing.',
+    size: '2.6 MB',
+    type: 'Starter Kit',
+    badgeVariant: 'yellow',
+  },
+];
 
 export default function VSCodeDocsPage() {
-  const [activeSection, setActiveSection] = useState('overview');
-  const [openFaq, setOpenFaq] = useState({});
-
-  const toggleFaq = (key) => {
-    setOpenFaq((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const [activeSection, setActiveSection] = useState('getting-started');
+  const [packages, setPackages] = useState(INITIAL_PACKAGES);
+  const [uploadStatus, setUploadStatus] = useState({});
+  const fileInputRefs = useRef({});
 
   const scrollToSection = (id) => {
     setActiveSection(id);
@@ -122,7 +130,6 @@ export default function VSCodeDocsPage() {
     }
   };
 
-  // Track scroll position to update active navigation item
   useEffect(() => {
     const handleScroll = () => {
       const scrollPos = window.scrollY + 200;
@@ -142,10 +149,50 @@ export default function VSCodeDocsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Function to download a ZIP placeholder file
+  const handleDownloadZip = (pkg) => {
+    // Generate a downloadable placeholder zip blob
+    const content = `Package: ${pkg.title}\nFilename: ${pkg.filename}\nDownloaded from: PenguLearn Study Companion\nDescription: ${pkg.description}\n\nGetting Started:\n1. Unzip this package\n2. Open in VS Code\n3. Start solving the TODOs in src/\n`;
+    const blob = new Blob([content], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = pkg.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Function to handle backend zip upload placeholder
+  const handleFileUpload = (pkgId, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadStatus((prev) => ({
+      ...prev,
+      [pkgId]: `Uploading ${file.name}...`,
+    }));
+
+    setTimeout(() => {
+      setUploadStatus((prev) => ({
+        ...prev,
+        [pkgId]: `✓ ${file.name} uploaded to backend (${(file.size / (1024 * 1024)).toFixed(1)} MB)`,
+      }));
+      setPackages((prev) =>
+        prev.map((p) =>
+          p.id === pkgId
+            ? { ...p, filename: file.name, size: `${(file.size / (1024 * 1024)).toFixed(1)} MB` }
+            : p
+        )
+      );
+    }, 1200);
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
+    <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in pb-12">
       {/* ============================================================== */}
-      {/* 1. DOCS NAVIGATION SIDEBAR (Desktop Sticky, Mobile Pills)      */}
+      {/* 1. DOCS NAVIGATION SIDEBAR                                     */}
       {/* ============================================================== */}
       <aside className="w-full lg:w-60 flex-shrink-0 lg:sticky lg:top-4 z-20">
         <div className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-4">
@@ -156,13 +203,12 @@ export default function VSCodeDocsPage() {
             </h3>
           </div>
 
-          {/* Navigation list */}
           <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 scrollbar-none">
             {DOC_SECTIONS.map((sec) => (
               <button
                 key={sec.id}
                 onClick={() => scrollToSection(sec.id)}
-                className={`px-3 py-2 rounded-xl text-left text-xs font-medium whitespace-nowrap transition-all flex items-center justify-between ${
+                className={`px-3 py-2 rounded-xl text-left text-xs font-medium whitespace-nowrap transition-all flex items-center justify-between cursor-pointer ${
                   activeSection === sec.id
                     ? 'bg-primary text-white font-bold border-2 border-slate-900 shadow-pixel-sm'
                     : 'text-ink-secondary hover:bg-slate-100 hover:text-ink border-2 border-transparent'
@@ -181,9 +227,9 @@ export default function VSCodeDocsPage() {
       {/* ============================================================== */}
       {/* 2. MAIN DOCUMENTATION CONTENT                                  */}
       {/* ============================================================== */}
-      <div className="flex-1 min-w-0 max-w-3xl space-y-12">
+      <div className="flex-1 min-w-0 max-w-3xl space-y-10">
         {/* HERO SECTION */}
-        <section id="overview" className="bg-surface rounded-3xl border-2 border-slate-900 shadow-pixel-lg p-6 sm:p-10 relative overflow-hidden">
+        <section id="getting-started" className="bg-surface rounded-3xl border-2 border-slate-900 shadow-pixel-lg p-6 sm:p-10 relative overflow-hidden">
           <div className="absolute inset-0 pixel-grid-dots opacity-40 pointer-events-none" />
 
           <div className="relative z-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
@@ -194,11 +240,11 @@ export default function VSCodeDocsPage() {
               </div>
 
               <h1 className="font-pixel text-2xl sm:text-3xl lg:text-4xl font-extrabold text-ink tracking-tight">
-                Study Companion — Desktop Pet
+                Getting Started with the Study Companion
               </h1>
 
               <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed font-sans max-w-xl">
-                A little companion that lives on your desktop while you code, watches for common mistakes, and nudges you with a question instead of just handing you the answer.
+                A small floating companion appears on your screen while you code. It watches for mistakes and guides you with questions rather than handing you the answers.
               </p>
             </div>
 
@@ -214,366 +260,280 @@ export default function VSCodeDocsPage() {
           </div>
         </section>
 
-        {/* SECTION: WHAT IT DOES */}
-        <section id="what-it-does" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
-          <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">What It Does</h2>
-            <p className="text-xs text-ink-secondary mt-1">Four core principles of your Socratic coding experience.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm">
-              <div className="w-8 h-8 rounded-lg bg-primary-soft border border-slate-900 flex items-center justify-center text-primary mb-2.5">
-                <Laptop className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-ink mb-1">1. Desktop Companion</h3>
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                Floats on your screen as a small, draggable, always-on-top window. You can drag Pengu anywhere while keeping focus on your editor.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm">
-              <div className="w-8 h-8 rounded-lg bg-learning-soft border border-slate-900 flex items-center justify-center text-learning mb-2.5">
-                <Activity className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-ink mb-1">2. Real-Time Coding Feedback</h3>
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                Reacts in real time while you code in VS Code through the companion's dedicated VS Code extension.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm">
-              <div className="w-8 h-8 rounded-lg bg-warning-soft border border-slate-900 flex items-center justify-center text-warning mb-2.5">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-ink mb-1">3. Socratic Guidance</h3>
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                When it notices off-by-one errors, missed edge cases, or infinite loops, it does not immediately provide the answer. Instead, it asks a question that helps you reason through the bug.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-slate-900 flex items-center justify-center text-primary mb-2.5">
-                <Eye className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-ink mb-1">4. Stays Quiet</h3>
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                If the code has been clean for a while, it rests quietly and does not interrupt your flow state unnecessarily.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION: HOW IT WORKS (ARCHITECTURE) */}
-        <section id="how-it-works" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
-          <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">How the System Works</h2>
-            <p className="text-xs text-ink-secondary mt-1">Lightweight local communication pipeline.</p>
-          </div>
-
-          {/* Architecture Diagram */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-slate-50 to-emerald-50 border-2 border-slate-900 shadow-pixel-sm">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-center">
-              <div className="p-3 bg-white rounded-xl border-2 border-slate-900 shadow-pixel-sm w-full md:w-auto">
-                <span className="font-pixel text-xs font-bold text-ink">VS Code</span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 rotate-90 md:rotate-0 flex-shrink-0" />
-              <div className="p-3 bg-white rounded-xl border-2 border-slate-900 shadow-pixel-sm w-full md:w-auto">
-                <span className="font-pixel text-xs font-bold text-primary">Socratic Extension</span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 rotate-90 md:rotate-0 flex-shrink-0" />
-              <div className="p-3 bg-white rounded-xl border-2 border-slate-900 shadow-pixel-sm w-full md:w-auto">
-                <span className="font-mono text-xs font-bold text-slate-600">Local 127.0.0.1</span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 rotate-90 md:rotate-0 flex-shrink-0" />
-              <div className="p-3 bg-white rounded-xl border-2 border-slate-900 shadow-pixel-sm w-full md:w-auto">
-                <span className="font-pixel text-xs font-bold text-learning">Desktop Pet</span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 rotate-90 md:rotate-0 flex-shrink-0" />
-              <div className="p-3 bg-amber-100 rounded-xl border-2 border-slate-900 shadow-pixel-sm w-full md:w-auto">
-                <span className="font-pixel text-xs font-bold text-amber-900">Feedback</span>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed">
-            The desktop app is the visual companion. The VS Code extension is responsible for observing the currently edited code and sending relevant reactions to the desktop pet.
-          </p>
-        </section>
-
-        {/* SECTION: WHAT IT NEEDS */}
-        <section id="what-it-needs" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
-          <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">What It Needs to Work</h2>
-            <p className="text-xs text-ink-secondary mt-1">Two cooperating software parts.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="p-5 rounded-2xl bg-surface border-2 border-slate-900 shadow-pixel-sm">
-              <div className="flex items-center gap-2 mb-2 font-pixel text-xs font-bold text-primary uppercase">
-                <Laptop className="w-4 h-4" /> Component A
-              </div>
-              <h3 className="font-bold text-base text-ink mb-1.5">1. Desktop App</h3>
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                The lightweight desktop window rendered via Electron that displays Pengu and hosts the local HTTP bridge on port 4123.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-surface border-2 border-slate-900 shadow-pixel-sm">
-              <div className="flex items-center gap-2 mb-2 font-pixel text-xs font-bold text-learning uppercase">
-                <Puzzle className="w-4 h-4" /> Component B
-              </div>
-              <h3 className="font-bold text-base text-ink mb-1.5">2. VS Code Extension</h3>
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                The extension that actually reads the actively edited file, analyzes edits for conceptual gaps, and signals the companion.
-              </p>
-            </div>
-          </div>
-
-          <Callout type="info" title="Important Note">
-            <strong>Both need to be running.</strong> The desktop app displays what the VS Code extension discovers. If either is closed, feedback pauses cleanly.
-          </Callout>
-        </section>
-
-        {/* SECTION: INSTALLATION */}
-        <section id="installation" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
-          <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">Installation</h2>
-            <p className="text-xs text-ink-secondary mt-1">Quick 5-step local setup.</p>
-          </div>
-
-          <div className="space-y-4 text-xs sm:text-sm">
-            <div className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-md bg-primary text-white font-pixel font-bold flex items-center justify-center flex-shrink-0 text-xs">
-                1
-              </span>
-              <p className="mt-0.5 text-ink font-medium">Download and unzip the companion application folder.</p>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-md bg-primary text-white font-pixel font-bold flex items-center justify-center flex-shrink-0 text-xs">
-                2
-              </span>
-              <p className="mt-0.5 text-ink font-medium">Open a terminal in the unzipped folder:</p>
-            </div>
-
-            <CodeBlock
-              language="BASH"
-              code={`cd vscode-pengu/socratic-desktop-companion\nnpm install\nnpm start`}
-            />
-
-            <div className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-md bg-primary text-white font-pixel font-bold flex items-center justify-center flex-shrink-0 text-xs">
-                4
-              </span>
-              <p className="mt-0.5 text-ink font-medium">
-                A small window with Pengu will appear in the bottom-right corner of your screen.
-              </p>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-md bg-primary text-white font-pixel font-bold flex items-center justify-center flex-shrink-0 text-xs">
-                5
-              </span>
-              <p className="mt-0.5 text-ink font-medium">
-                Leave the app running while you code.
-              </p>
-            </div>
-          </div>
-
-          <Callout type="tip" title="Pro-Tip">
-            The pet can be dragged anywhere on the screen by clicking and holding on Pengu.
-          </Callout>
-        </section>
-
-        {/* SECTION: USING A STARTER KIT */}
-        <section id="starter-kit" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
-          <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">Using It with a Starter Kit</h2>
-            <p className="text-xs text-ink-secondary mt-1">Structured workflow for hands-on exercises.</p>
-          </div>
-
-          <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed">
-            If you downloaded an Argonyx practice starter kit for <strong>DSA</strong>, <strong>DBMS</strong>, <strong>System Design</strong>, or <strong>Web Development</strong>:
-          </p>
-
-          {/* Stepper Timeline */}
-          <div className="space-y-3.5 pl-2 border-l-2 border-primary/30">
-            <div className="relative pl-6">
-              <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-pixel-sm" />
-              <h4 className="font-bold text-xs text-ink">Step 1: Make sure the desktop app is running.</h4>
-            </div>
-
-            <div className="relative pl-6">
-              <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-pixel-sm" />
-              <h4 className="font-bold text-xs text-ink">Step 2: Unzip the starter kit.</h4>
-            </div>
-
-            <div className="relative pl-6">
-              <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-pixel-sm" />
-              <h4 className="font-bold text-xs text-ink">Step 3: Open its folder in VS Code.</h4>
-            </div>
-
-            <div className="relative pl-6">
-              <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-pixel-sm" />
-              <h4 className="font-bold text-xs text-ink">Step 4: Ensure the VS Code extension is installed & active.</h4>
-            </div>
-
-            <div className="relative pl-6">
-              <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-pixel-sm" />
-              <h4 className="font-bold text-xs text-ink">Step 5: Open a file inside the kit's src/ folder.</h4>
-            </div>
-
-            <div className="relative pl-6">
-              <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-learning border-2 border-white shadow-pixel-sm" />
-              <h4 className="font-bold text-xs text-ink">Step 6: Start working through the TODOs in the README.</h4>
-            </div>
-          </div>
-
-          <Callout type="tip" title="Adaptive Alignment">
-            The companion can pick up on the kinds of mistakes each exercise is designed to surface and ask questions as you work.
-          </Callout>
-        </section>
-
-        {/* SECTION: HEALTH CHECK */}
-        <section id="health-check" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
-          <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">Checking It’s Actually Running</h2>
-            <p className="text-xs text-ink-secondary mt-1">Verifying your local port connectivity.</p>
-          </div>
-
-          <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed">
-            The desktop application exposes an internal health endpoint on loopback:
-          </p>
-
-          <CodeBlock
-            language="BASH"
-            code="curl http://127.0.0.1:4123/health"
-          />
-
-          <Callout type="success" title="Expected Response">
-            <code>{"{\"status\":\"ok\"}"}</code>
-          </Callout>
-
-          <p className="text-xs text-ink-secondary">
-            If this request fails, the desktop application may not be running. Restart it with <code>npm start</code>. This endpoint is strictly bound to localhost and is never remotely accessible.
-          </p>
-        </section>
-
-        {/* SECTION: PRIVACY */}
-        <section id="privacy" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
+        {/* SETUP SECTION */}
+        <section id="setup" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-6">
           <div className="border-b-2 border-slate-200 pb-3 flex items-center justify-between">
             <div>
-              <h2 className="font-pixel text-xl font-bold text-ink">Privacy — What It Actually Sees</h2>
-              <p className="text-xs text-ink-secondary mt-1">Clear transparency on file and telemetry access.</p>
+              <h2 className="font-pixel text-xl font-bold text-ink">Setup</h2>
+              <p className="text-xs text-ink-secondary mt-1">Get your desktop companion and VS Code extension running in 3 steps.</p>
             </div>
-            <Lock className="w-5 h-5 text-learning" />
+            <Terminal className="w-5 h-5 text-primary" />
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm space-y-2 text-xs sm:text-sm text-ink-secondary">
-            <ul className="list-disc pl-5 space-y-1.5">
-              <li>The desktop app itself only displays what it is told to show.</li>
-              <li>It does not independently read your screen.</li>
-              <li>It does not independently read your files.</li>
-              <li>Code observation happens solely in the separate VS Code extension.</li>
-              <li>The extension only looks at the file you are actively editing.</li>
-              <li>Communication between the desktop app and extension happens through <strong>127.0.0.1</strong>.</li>
-              <li>Code does not leave your computer unless the extension has been configured to call an external diagnosis backend.</li>
-              <li>That external diagnosis behavior can be disabled completely.</li>
-            </ul>
-          </div>
+          <div className="space-y-8">
+            {/* Step 1 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-lg bg-primary text-white font-pixel font-bold flex items-center justify-center text-sm shadow-pixel-sm">
+                  1
+                </span>
+                <h3 className="font-bold text-base text-ink">
+                  Install the Desktop Companion (once)
+                </h3>
+              </div>
 
-          {/* Privacy Flow Diagram */}
-          <div className="p-4 rounded-xl bg-blue-50/50 border border-primary/30 text-xs space-y-2">
-            <span className="font-pixel font-bold text-primary uppercase">Local Data Boundary:</span>
-            <div className="font-mono text-[11px] text-ink bg-white p-3 rounded-lg border border-slate-200">
-              ACTIVE FILE ──▶ VS CODE EXTENSION ──▶ 127.0.0.1 ──▶ DESKTOP PET
+              <CodeBlock
+                language="BASH"
+                code={`unzip desktop-companion.zip && cd desktop-companion\nnpm install && npm start`}
+              />
+
+              <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed pl-1">
+                A small floating companion appears on your screen. Leave it running while you code.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="space-y-3 pt-2 border-t border-slate-200">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-lg bg-primary text-white font-pixel font-bold flex items-center justify-center text-sm shadow-pixel-sm">
+                  2
+                </span>
+                <h3 className="font-bold text-base text-ink">
+                  Install the VS Code Extension (once)
+                </h3>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm space-y-2">
+                <p className="text-xs sm:text-sm text-ink leading-relaxed font-sans">
+                  Install <strong>Socratic Study Companion</strong> from the VS Code Marketplace (or load the provided <code>.vsix</code>). This is what actually reads your code and talks to the companion.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="space-y-3 pt-2 border-t border-slate-200">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-lg bg-primary text-white font-pixel font-bold flex items-center justify-center text-sm shadow-pixel-sm">
+                  3
+                </span>
+                <h3 className="font-bold text-base text-ink">
+                  Download a starter kit, open it in VS Code
+                </h3>
+              </div>
+
+              <CodeBlock
+                language="BASH"
+                code={`unzip <kit-name>.zip && cd <kit-name>\ncode .`}
+              />
+
+              <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed pl-1">
+                Open any file in <code>src/</code>, start coding the TODOs. The companion will ask you a question if it spots a mistake — it won't hand you the fix.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* SECTION: TROUBLESHOOTING */}
-        <section id="troubleshooting" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-5">
+        {/* STARTER KITS SECTION */}
+        <section id="starter-kits" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-6">
           <div className="border-b-2 border-slate-200 pb-3">
-            <h2 className="font-pixel text-xl font-bold text-ink">Troubleshooting</h2>
-            <p className="text-xs text-ink-secondary mt-1">Answers to common companion questions.</p>
+            <h2 className="font-pixel text-xl font-bold text-ink">Starter Kits</h2>
+            <p className="text-xs text-ink-secondary mt-1">Curated hands-on coding repositories with built-in Socratic checkpoints.</p>
           </div>
 
-          <div className="space-y-3">
-            {/* FAQ 1 */}
-            <div className="rounded-xl border-2 border-slate-900 overflow-hidden bg-slate-50">
-              <button
-                onClick={() => toggleFaq('never-appears')}
-                className="w-full text-left p-4 font-bold text-xs sm:text-sm text-ink flex items-center justify-between hover:bg-slate-100 transition-colors"
-              >
-                <span>The window never appears</span>
-                {openFaq['never-appears'] ? (
-                  <ChevronDown className="w-4 h-4 text-primary" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                )}
-              </button>
-              {openFaq['never-appears'] && (
-                <div className="p-4 pt-0 text-xs text-ink-secondary border-t border-slate-200 bg-white space-y-2">
-                  <p>Check the terminal for errors after <code>npm start</code>.</p>
-                  <p>Common causes include:</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><code>npm install</code> did not finish cleanly.</li>
-                    <li>Node.js is not installed. Check with <code>node -v</code>.</li>
-                  </ul>
-                </div>
-              )}
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b-2 border-slate-900 text-xs font-pixel font-bold text-ink uppercase tracking-wider bg-slate-50">
+                  <th className="py-3 px-4">Kit</th>
+                  <th className="py-3 px-4">You'll practice</th>
+                  <th className="py-3 px-4">Difficulty</th>
+                  <th className="py-3 px-4 text-right">Download</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y border-b border-slate-200 text-xs sm:text-sm">
+                {/* Kit 1 */}
+                <tr className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-ink">
+                    DSA — Binary Search &amp; Recursion
+                  </td>
+                  <td className="py-3.5 px-4 text-ink-secondary text-xs">
+                    Loop bounds, edge cases on empty input, recursive base cases
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <PixelBadge variant="green" size="sm">
+                      Beginner
+                    </PixelBadge>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <button
+                      onClick={() => handleDownloadZip(packages[1])}
+                      className="pixel-btn-secondary !text-xs !py-1 !px-2.5 inline-flex items-center gap-1 cursor-pointer"
+                      title="Download starter kit zip"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>.zip</span>
+                    </button>
+                  </td>
+                </tr>
 
-            {/* FAQ 2 */}
-            <div className="rounded-xl border-2 border-slate-900 overflow-hidden bg-slate-50">
-              <button
-                onClick={() => toggleFaq('never-reacts')}
-                className="w-full text-left p-4 font-bold text-xs sm:text-sm text-ink flex items-center justify-between hover:bg-slate-100 transition-colors"
-              >
-                <span>It's running but never reacts</span>
-                {openFaq['never-reacts'] ? (
-                  <ChevronDown className="w-4 h-4 text-primary" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                )}
-              </button>
-              {openFaq['never-reacts'] && (
-                <div className="p-4 pt-0 text-xs text-ink-secondary border-t border-slate-200 bg-white space-y-2">
-                  <p>Make sure:</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li>The VS Code extension is installed and active in your editor.</li>
-                    <li>You are actively editing a supported file.</li>
-                    <li>The extension has enough time to evaluate the code.</li>
-                  </ul>
-                  <Callout type="warning" title="Pacing">
-                    The companion is not designed to react on every keystroke by design. It checks after a natural pause in typing.
-                  </Callout>
-                </div>
-              )}
-            </div>
+                {/* Kit 2 */}
+                <tr className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-ink">
+                    DBMS — Query Engine
+                  </td>
+                  <td className="py-3.5 px-4 text-ink-secondary text-xs">
+                    How WHERE/JOIN work under the hood, ID comparison pitfalls, handling empty tables
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <PixelBadge variant="yellow" size="sm">
+                      Intermediate
+                    </PixelBadge>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <button
+                      onClick={() => handleDownloadZip(packages[2])}
+                      className="pixel-btn-secondary !text-xs !py-1 !px-2.5 inline-flex items-center gap-1 cursor-pointer"
+                      title="Download starter kit zip"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>.zip</span>
+                    </button>
+                  </td>
+                </tr>
 
-            {/* FAQ 3 */}
-            <div className="rounded-xl border-2 border-slate-900 overflow-hidden bg-slate-50">
-              <button
-                onClick={() => toggleFaq('quit')}
-                className="w-full text-left p-4 font-bold text-xs sm:text-sm text-ink flex items-center justify-between hover:bg-slate-100 transition-colors"
-              >
-                <span>I want to quit it</span>
-                {openFaq['quit'] ? (
-                  <ChevronDown className="w-4 h-4 text-primary" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                )}
-              </button>
-              {openFaq['quit'] && (
-                <div className="p-4 pt-0 text-xs text-ink-secondary border-t border-slate-200 bg-white">
-                  <p>
-                    Close the pet window directly, or press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono text-xs">Ctrl+C</kbd> in the terminal where the app was launched.
-                  </p>
-                </div>
-              )}
+                {/* Kit 3 */}
+                <tr className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-ink">
+                    System Design — LRU Cache
+                  </td>
+                  <td className="py-3.5 px-4 text-ink-secondary text-xs">
+                    Cache eviction logic, capacity edge cases, avoiding infinite loops in eviction
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <PixelBadge variant="red" size="sm">
+                      Intermediate–Advanced
+                    </PixelBadge>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <button
+                      onClick={() => handleDownloadZip(packages[3])}
+                      className="pixel-btn-secondary !text-xs !py-1 !px-2.5 inline-flex items-center gap-1 cursor-pointer"
+                      title="Download starter kit zip"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>.zip</span>
+                    </button>
+                  </td>
+                </tr>
+
+                {/* Kit 4 */}
+                <tr className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-ink">
+                    Web Dev — Fetch &amp; Debounce
+                  </td>
+                  <td className="py-3.5 px-4 text-ink-secondary text-xs">
+                    Retry logic without infinite loops, async error handling, debouncing rapid events
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <PixelBadge variant="yellow" size="sm">
+                      Intermediate
+                    </PixelBadge>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <button
+                      onClick={() => handleDownloadZip(packages[4])}
+                      className="pixel-btn-secondary !text-xs !py-1 !px-2.5 inline-flex items-center gap-1 cursor-pointer"
+                      title="Download starter kit zip"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>.zip</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* 5 ZIP FILE PLACEHOLDERS (DOWNLOAD & UPLOAD TO BACKEND) */}
+        <section id="zip-downloads" className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-6 sm:p-8 space-y-6">
+          <div className="border-b-2 border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="font-pixel text-xl font-bold text-ink">
+                Package Downloads &amp; Backend Upload Placeholders
+              </h2>
+              <p className="text-xs text-ink-secondary mt-1">
+                5 dedicated placeholders for study companion zip packages. Users can download anytime or upload new packages to the backend.
+              </p>
             </div>
+            <FileArchive className="w-5 h-5 text-primary" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {packages.map((pkg, idx) => (
+              <div
+                key={pkg.id}
+                className="p-4 rounded-xl bg-slate-50 border-2 border-slate-900 shadow-pixel-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-primary-soft border border-slate-900 flex items-center justify-center text-primary flex-shrink-0 font-pixel font-bold">
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-sm text-ink">{pkg.title}</h4>
+                      <PixelBadge variant={pkg.badgeVariant} size="sm">
+                        {pkg.type}
+                      </PixelBadge>
+                      <span className="font-mono text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {pkg.filename} ({pkg.size})
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-secondary mt-1 leading-snug">
+                      {pkg.description}
+                    </p>
+                    {uploadStatus[pkg.id] && (
+                      <p className="text-[11px] font-pixel text-learning-hover mt-1 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-learning" />
+                        {uploadStatus[pkg.id]}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions: Download button and Backend Upload Placeholder */}
+                <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+                  {/* Hidden file input for uploading to backend */}
+                  <input
+                    type="file"
+                    accept=".zip,application/zip"
+                    ref={(el) => (fileInputRefs.current[pkg.id] = el)}
+                    onChange={(e) => handleFileUpload(pkg.id, e)}
+                    className="hidden"
+                  />
+
+                  {/* Backend Upload Placeholder Button */}
+                  <button
+                    onClick={() => fileInputRefs.current[pkg.id]?.click()}
+                    className="pixel-btn-secondary !text-xs !py-1.5 !px-3 inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-ink"
+                    title="Upload replacement ZIP to backend"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload ZIP</span>
+                  </button>
+
+                  {/* Download Button */}
+                  <button
+                    onClick={() => handleDownloadZip(pkg)}
+                    className="pixel-btn-primary !text-xs !py-1.5 !px-3 inline-flex items-center gap-1.5 cursor-pointer"
+                    title="Download ZIP package"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </div>

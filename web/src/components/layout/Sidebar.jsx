@@ -134,8 +134,12 @@ export default function Sidebar({ onCloseMobile = () => {} }) {
         {/* User Card */}
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface border-2 border-slate-900 shadow-pixel-sm">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-primary-soft border border-slate-900 flex items-center justify-center font-pixel font-bold text-primary text-sm flex-shrink-0">
-              {user?.name?.charAt(0).toUpperCase() || 'P'}
+            <div className="w-9 h-9 rounded-lg bg-primary-soft border border-slate-900 flex items-center justify-center font-pixel font-bold text-primary text-sm flex-shrink-0 overflow-hidden">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt={user.name || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase() || 'P'
+              )}
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-ink truncate">

@@ -8,14 +8,21 @@ export default function YouTubeCarousel({
   onSelectVideo = null,
 }) {
   const scrollRef = useRef(null);
-  const [isPaused, setIsPaused] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   // Manual scroll buttons
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -340 : 340;
+      const scrollAmount = direction === 'left' ? -360 : 360;
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // Enable mouse wheel horizontal scrolling
+  const handleWheel = (e) => {
+    if (scrollRef.current && e.deltaY !== 0) {
+      // If user scrolls vertical wheel over carousel, scroll horizontally
+      scrollRef.current.scrollLeft += e.deltaY;
     }
   };
 
@@ -27,8 +34,7 @@ export default function YouTubeCarousel({
     }
   };
 
-  // Duplicate items for continuous looping feel
-  const displayVideos = [...videos, ...videos];
+  const displayVideos = videos && videos.length > 0 ? videos : [];
 
   return (
     <div className="bg-surface rounded-2xl border-2 border-slate-900 shadow-pixel p-5 sm:p-6 mb-8">
@@ -44,14 +50,14 @@ export default function YouTubeCarousel({
             </h3>
           </div>
           <p className="text-xs text-ink-secondary mt-0.5">
-            Streaming curriculum lectures. Hover to pause, click to play inside the app.
+            Streaming curriculum lectures. Scroll horizontally with your mouse wheel or arrows, click to play.
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-center">
           <button
             onClick={() => scroll('left')}
-            className="p-1.5 rounded-lg border-2 border-slate-900 shadow-pixel-sm bg-white hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg border-2 border-slate-900 shadow-pixel-sm bg-white hover:bg-slate-100 transition-colors active:translate-y-0.5"
             title="Scroll left"
             aria-label="Scroll left"
           >
@@ -59,7 +65,7 @@ export default function YouTubeCarousel({
           </button>
           <button
             onClick={() => scroll('right')}
-            className="p-1.5 rounded-lg border-2 border-slate-900 shadow-pixel-sm bg-white hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg border-2 border-slate-900 shadow-pixel-sm bg-white hover:bg-slate-100 transition-colors active:translate-y-0.5"
             title="Scroll right"
             aria-label="Scroll right"
           >
@@ -68,27 +74,22 @@ export default function YouTubeCarousel({
         </div>
       </div>
 
-      {/* Horizontally scrolling container */}
-      <div
-        className="relative overflow-hidden group"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      {/* Horizontally scrolling container - removed jumpy marquee on hover */}
+      <div className="relative">
         <div
           ref={scrollRef}
-          className={`flex gap-4 overflow-x-auto pb-2 scrollbar-none scroll-smooth ${
-            !isPaused ? 'animate-marquee' : ''
-          }`}
+          onWheel={handleWheel}
+          className="flex gap-4 overflow-x-auto pb-4 pt-1 px-1 scroll-smooth select-none cursor-grab active:cursor-grabbing"
           style={{
-            animationPlayState: isPaused ? 'paused' : 'running',
-            width: 'max-content',
+            scrollbarWidth: 'thin',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           {displayVideos.map((video, idx) => (
             <div
-              key={`${video.material_id || video.id}-${idx}`}
+              key={`${video.material_id || video.id || 'vid'}-${idx}`}
               onClick={() => handleCardClick(video)}
-              className="w-72 sm:w-80 flex-shrink-0 bg-slate-50 rounded-xl border-2 border-slate-900 shadow-pixel-sm hover:shadow-pixel hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden flex flex-col"
+              className="w-72 sm:w-80 flex-shrink-0 bg-slate-50 rounded-xl border-2 border-slate-900 shadow-pixel-sm hover:shadow-pixel hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden flex flex-col group"
             >
               {/* Thumbnail Container */}
               <div className="relative aspect-video w-full bg-slate-800 overflow-hidden border-b-2 border-slate-900">

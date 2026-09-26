@@ -8,7 +8,7 @@ import TestResultSummary from '../components/mcq/TestResultSummary';
 import Modal from '../components/common/Modal';
 import PixelProgressBar from '../components/common/PixelProgressBar';
 import PixelBadge from '../components/common/PixelBadge';
-import { Clock, ArrowLeft, Send, AlertTriangle, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Clock, ArrowLeft, Send, AlertTriangle, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function MCQTestPage() {
@@ -23,12 +23,13 @@ export default function MCQTestPage() {
   const [markedForReview, setMarkedForReview] = useState({});
   const [secondsRemaining, setSecondsRemaining] = useState(1200); // 20 mins default
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize test data and questions from backend
+  // Initialize test data and questions from backend (or fallback)
   useEffect(() => {
     async function loadTestAndQuestions() {
       try {
@@ -60,7 +61,7 @@ export default function MCQTestPage() {
           setSecondsRemaining(Math.max(300, qList.length * 120));
         }
       } catch (err) {
-        console.warn('Failed to load test questions from backend:', err);
+        console.warn('Failed to load test questions:', err);
       }
     }
     loadTestAndQuestions();
@@ -117,6 +118,25 @@ export default function MCQTestPage() {
     }
   };
 
+  // Handle user wanting to leave midway - item 2
+  const handleBackButtonClick = () => {
+    if (isCompleted || isReviewMode) {
+      navigate('/mcqs');
+      return;
+    }
+    const answeredCount = Object.keys(answers).length;
+    if (answeredCount > 0) {
+      setIsLeaveModalOpen(true);
+    } else {
+      navigate('/mcqs');
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    setIsLeaveModalOpen(false);
+    navigate('/mcqs');
+  };
+
   const handleSubmitTest = async (autoSubmit = false) => {
     setIsSubmitModalOpen(false);
     setIsSubmitting(true);
@@ -125,13 +145,80 @@ export default function MCQTestPage() {
     let correctCount = 0;
     const studentId = user?.id || 's_1029';
 
+    questions.forEach((q, idx) => {
+      const chosen = answers[idx];
+      if (chosen === q.correct_option_id) {
+        correctCount += 1;
+      }
+    });
+
+    const totalSeconds = testData?.duration_seconds || 1200;
+    const timeSpentSeconds = Math.max(1, totalSeconds - secondsRemaining);
+    const formattedTime = `${Math.floor(timeSpentSeconds / 60)}:${(timeSpentSeconds % 60)
+      .toString()
+      .padStart(2, '0')}`;
+
+    const finalResult = {
+      score: correctCount,
+      total: questions.length,
+      timeTaken: formattedTime,
+      accuracy: questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0,
+    };
+
+    setResultData(finalResult);
+    setIsCompleted(true);
+
+    // CRITICAL for item 3: Save test completion to localStorage cache so MCQsPage
+    // and Dashboard immediately reflect that the paper was given with accurate % done!
+    try {
+      const completedRecord = {
+        test_id: testId,
+        topic_id: testData?.topic_id,
+        topic_name: testData?.topic_name,
+        domain: testData?.domain,
+        title: testData?.title,
+        score: `${correctCount} / ${questions.length}`,
+        total_questions: questions.length,
+        attempted_questions: questions.length,
+        completed_questions: questions.length,
+        accuracy: finalResult.accuracy,
+        progress_percentage: finalResult.accuracy,
+        status: 'completed',
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        day: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+        completed_at: new Date().toISOString(),
+      };
+
+      const existingCompleted = JSON.parse(localStorage.getItem('pengu_completed_tests') || '{}');
+      existingCompleted[testId] = completedRecord;
+      if (testData?.topic_id) {
+        existingCompleted[`test_${testData.topic_id}`] = completedRecord;
+      }
+      localStorage.setItem('pengu_completed_tests', JSON.stringify(existingCompleted));
+
+      // Also save completed attempts locally
+      const storedAttempts = JSON.parse(localStorage.getItem('pengu_local_attempts') || '[]');
+      questions.forEach((q, idx) => {
+        const chosen = answers[idx];
+        if (chosen) {
+          storedAttempts.unshift({
+            student_id: studentId,
+            topic_id: q.topic_id || testData?.topic_id,
+            question_id: q.question_id,
+            is_correct: chosen === q.correct_option_id,
+            created_at: new Date().toISOString(),
+          });
+        }
+      });
+      localStorage.setItem('pengu_local_attempts', JSON.stringify(storedAttempts.slice(0, 100)));
+    } catch (saveErr) {
+      console.warn('Local result cache save:', saveErr);
+    }
+
     // Submit diagnoses to backend for all answered questions in parallel
     const diagnosePromises = questions.map((q, idx) => {
       const chosen = answers[idx];
       if (chosen) {
-        if (chosen === q.correct_option_id) {
-          correctCount += 1;
-        }
         return learningService.diagnoseMCQ(
           studentId,
           q.question_id,
@@ -150,19 +237,6 @@ export default function MCQTestPage() {
     } finally {
       setIsSubmitting(false);
     }
-
-    const totalSeconds = testData?.duration_seconds || 1200;
-    const timeSpentSeconds = Math.max(1, totalSeconds - secondsRemaining);
-    const formattedTime = `${Math.floor(timeSpentSeconds / 60)}:${(timeSpentSeconds % 60)
-      .toString()
-      .padStart(2, '0')}`;
-
-    setResultData({
-      score: correctCount,
-      total: questions.length,
-      timeTaken: formattedTime,
-    });
-    setIsCompleted(true);
 
     // Trigger celebration confetti
     try {
@@ -190,17 +264,20 @@ export default function MCQTestPage() {
         score={resultData.score}
         total={resultData.total}
         timeTaken={resultData.timeTaken}
+        questions={questions}
+        answers={answers}
         onBackToMCQs={() => navigate('/mcqs')}
-        onReviewAnswers={() => {
+        onReviewAnswers={(targetIndex = 0) => {
           setIsReviewMode(true);
-          setCurrentIndex(0);
+          setCurrentIndex(typeof targetIndex === 'number' ? targetIndex : 0);
         }}
       />
     );
   }
 
   const answeredCount = Object.keys(answers).length;
-  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
+  // Item 3: Progress percentage shows proportion of test questions answered
+  const progressPercent = isCompleted ? 100 : (questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0);
   const currentQuestion = questions[currentIndex];
 
   return (
@@ -210,7 +287,7 @@ export default function MCQTestPage() {
         {/* Test title & topic */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/mcqs')}
+            onClick={handleBackButtonClick}
             className="p-1.5 rounded-lg border-2 border-slate-900 shadow-pixel-sm bg-white hover:bg-slate-100"
             title="Leave test"
           >
@@ -236,14 +313,16 @@ export default function MCQTestPage() {
         {/* Progress & Countdown Timer */}
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           {/* Question progress */}
-          <div className="min-w-[140px] text-right">
+          <div className="min-w-[160px] text-right">
             <span className="font-pixel text-xs font-bold text-ink">
-              Question {currentIndex + 1} of {questions.length}
+              {isReviewMode
+                ? `Review Q${currentIndex + 1} of ${questions.length}`
+                : `${answeredCount} / ${questions.length} answered (${progressPercent}%)`}
             </span>
             <div className="w-full mt-1">
               <PixelProgressBar
                 progress={progressPercent}
-                variant="blue"
+                variant={isReviewMode ? 'green' : 'blue'}
                 showLabel={false}
                 height="h-2"
               />
@@ -251,18 +330,20 @@ export default function MCQTestPage() {
           </div>
 
           {/* Timer Display */}
-          <div
-            className={`px-3 py-1.5 rounded-xl border-2 border-slate-900 shadow-pixel-sm flex items-center gap-2 ${
-              secondsRemaining < 180
-                ? 'bg-red-50 text-error animate-pulse border-error'
-                : 'bg-slate-50 text-ink'
-            }`}
-          >
-            <Clock className="w-4 h-4 text-primary" />
-            <span className="font-mono text-sm font-bold tracking-wider">
-              {formatTimer(secondsRemaining)}
-            </span>
-          </div>
+          {!isReviewMode && (
+            <div
+              className={`px-3 py-1.5 rounded-xl border-2 border-slate-900 shadow-pixel-sm flex items-center gap-2 ${
+                secondsRemaining < 180
+                  ? 'bg-red-50 text-error animate-pulse border-error'
+                  : 'bg-slate-50 text-ink'
+              }`}
+            >
+              <Clock className="w-4 h-4 text-primary" />
+              <span className="font-mono text-sm font-bold tracking-wider">
+                {formatTimer(secondsRemaining)}
+              </span>
+            </div>
+          )}
 
           {/* Submit Test Button */}
           {!isReviewMode && (
@@ -302,6 +383,7 @@ export default function MCQTestPage() {
             onNext={handleNext}
             canGoPrevious={currentIndex > 0}
             canGoNext={currentIndex < questions.length - 1}
+            isReviewMode={isReviewMode}
           />
         </div>
 
@@ -313,18 +395,22 @@ export default function MCQTestPage() {
             answers={answers}
             markedForReview={markedForReview}
             onSelectQuestion={(idx) => setCurrentIndex(idx)}
+            isReviewMode={isReviewMode}
+            questions={questions}
           />
 
           {/* Help box */}
-          <div className="mt-4 p-4 rounded-xl bg-blue-50/60 border-2 border-slate-900 shadow-pixel-sm text-xs text-ink-secondary">
-            <div className="flex items-center gap-1.5 font-pixel font-bold text-primary mb-1">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <span>Auto-Save Enabled</span>
+          {!isReviewMode && (
+            <div className="mt-4 p-4 rounded-xl bg-blue-50/60 border-2 border-slate-900 shadow-pixel-sm text-xs text-ink-secondary">
+              <div className="flex items-center gap-1.5 font-pixel font-bold text-primary mb-1">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                <span>Single Sitting Test</span>
+              </div>
+              <p>
+                Complete your test in one session. Leaving midway discards answers so you can start fresh next time.
+              </p>
             </div>
-            <p>
-              Your chosen options are preserved as you jump between questions. When ready, click Submit Test.
-            </p>
-          </div>
+          )}
         </div>
       </div>
 
@@ -372,13 +458,43 @@ export default function MCQTestPage() {
               onClick={() => setIsSubmitModalOpen(false)}
               className="pixel-btn-secondary text-xs"
             >
-              Cancel & Continue Test
+              Cancel &amp; Continue Test
             </button>
             <button
               onClick={() => handleSubmitTest(false)}
               className="pixel-btn-primary text-xs !bg-learning hover:!bg-learning-hover"
             >
-              Confirm & Submit
+              Confirm &amp; Submit
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmation Modal When Leaving Midway - item 2 */}
+      <Modal
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+        title="Leave test midway?"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-amber-50 border border-warning rounded-xl text-xs text-amber-900 font-medium flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+            <span>
+              If you leave now, your current answers will be discarded. You will need to take the test again from the start.
+            </span>
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-3">
+            <button
+              onClick={() => setIsLeaveModalOpen(false)}
+              className="pixel-btn-primary text-xs"
+            >
+              Stay in Test
+            </button>
+            <button
+              onClick={handleConfirmLeave}
+              className="pixel-btn-secondary text-xs text-error hover:!border-error"
+            >
+              Leave &amp; Reset Test
             </button>
           </div>
         </div>

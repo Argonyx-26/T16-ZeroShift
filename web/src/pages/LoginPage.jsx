@@ -56,7 +56,7 @@ export default function LoginPage() {
           Sign In to PenguLearn
         </h1>
         <p className="mt-1 text-xs text-ink-secondary">
-          Continue your adaptive study streak and resume tests.
+          Continue your adaptive study streak and take diagnostic tests.
         </p>
       </div>
 

@@ -19,50 +19,92 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const studentId = user?.id || 's_1029';
-        const [profileData, allMastery, userAttempts] = await Promise.all([
+        const [profileData, allMastery, userAttempts, topics] = await Promise.all([
           learningService.getUserLearningProfile(studentId),
           learningService.getAllMastery(studentId),
           learningService.getAttempts(studentId, null, 100),
+          learningService.getTopics(),
         ]);
 
         setProfile(profileData);
         setAttempts(userAttempts || []);
 
-        if (allMastery && allMastery.length > 0) {
-          const DOMAIN_LABELS = {
-            dsa: 'Data Structures & Algorithms',
-            dbms: 'DBMS',
-            system_design: 'System Design',
-            web_dev: 'Web Development',
+        const DOMAIN_LABELS = {
+          dsa: 'Data Structures & Algorithms',
+          dbms: 'DBMS',
+          system_design: 'System Design',
+          web_dev: 'Web Development',
+        };
+
+        const completedTests = JSON.parse(localStorage.getItem('pengu_completed_tests') || '{}');
+
+        // Group attempts by topic
+        const attemptsByTopic = {};
+        (userAttempts || []).forEach((a) => {
+          if (!attemptsByTopic[a.topic_id]) attemptsByTopic[a.topic_id] = [];
+          attemptsByTopic[a.topic_id].push(a);
+        });
+
+        // Use topics list (from DB or fallback)
+        const topicList = (allMastery && allMastery.length > 0) ? allMastery : topics;
+
+        const covered = [];
+        const active = [];
+
+        topicList.forEach((item) => {
+          const topicId = item.topic_id;
+          const topicAttempts = attemptsByTopic[topicId] || [];
+          const completedRecord = completedTests[`test_${topicId}`] || completedTests[topicId];
+
+          let progressPct = 0;
+          let isMastered = false;
+          let solvedCount = topicAttempts.length;
+
+          if (completedRecord) {
+            // Paper has been given/submitted
+            progressPct = completedRecord.accuracy ?? completedRecord.progress_percentage ?? 80;
+            solvedCount = Math.max(solvedCount, completedRecord.attempted_questions || 10);
+            isMastered = progressPct >= 80;
+          } else if (solvedCount > 0) {
+            // In-progress attempts: natural distribution based on work done (Item 7)
+            const correctCount = topicAttempts.filter((a) => a.is_correct).length;
+            const workRatio = Math.min(1, solvedCount / 10);
+            const accRatio = correctCount / solvedCount;
+            progressPct = Math.min(100, Math.round(workRatio * 70 + accRatio * 30));
+            isMastered = progressPct >= 85;
+          } else if (item.attempts > 0) {
+            const workRatio = Math.min(1, item.attempts / 10);
+            const pM = parseFloat(item.p_mastery || 0.3);
+            progressPct = Math.min(100, Math.round(workRatio * 60 + pM * 40));
+            isMastered = progressPct >= 85;
+          } else {
+            // Zero work done = 0% (Item 7: fix 16% bug for untouched topics)
+            progressPct = 0;
+            isMastered = false;
+          }
+
+          const diffVal = typeof item.difficulty === 'number' ? item.difficulty : 2;
+          const topicObj = {
+            topic_id: topicId,
+            topic_name: item.display_name,
+            subject: DOMAIN_LABELS[item.domain] || item.domain || 'Curriculum',
+            status: isMastered ? 'completed' : 'active',
+            progress_percentage: progressPct,
+            last_updated: completedRecord?.date || (item.last_updated ? new Date(item.last_updated).toLocaleDateString() : 'Curriculum'),
+            solved_count: solvedCount,
+            remaining: `${Math.max(0, 10 - solvedCount)} questions left`,
+            difficulty: diffVal <= 2 ? 'Easy' : diffVal <= 3 ? 'Intermediate' : 'Hard',
           };
 
-          const covered = [];
-          const active = [];
+          if (isMastered) {
+            covered.push(topicObj);
+          } else {
+            active.push(topicObj);
+          }
+        });
 
-          allMastery.forEach((item) => {
-            const pct = Math.round(parseFloat(item.p_mastery || 0) * 100);
-            const topicObj = {
-              topic_id: item.topic_id,
-              topic_name: item.display_name,
-              subject: DOMAIN_LABELS[item.domain] || item.domain,
-              status: pct >= 85 ? 'completed' : 'active',
-              progress_percentage: pct,
-              last_updated: item.last_updated ? new Date(item.last_updated).toLocaleDateString() : 'Curriculum',
-              solved_count: item.attempts || 0,
-              remaining: `${Math.max(1, 10 - (item.attempts || 0))} questions left`,
-              difficulty: item.difficulty <= 2 ? 'Easy' : item.difficulty <= 3 ? 'Intermediate' : 'Hard',
-            };
-
-            if (pct >= 85) {
-              covered.push(topicObj);
-            } else {
-              active.push(topicObj);
-            }
-          });
-
-          setCoveredTopics(covered);
-          setActiveTopics(active);
-        }
+        setCoveredTopics(covered);
+        setActiveTopics(active);
       } catch (err) {
         console.warn('Dashboard data loading notice:', err);
       } finally {
